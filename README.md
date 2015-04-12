@@ -3,14 +3,14 @@
 
 Fast Fourier Aliasing-based Sparse Transform (FFAST) for calculating the Discrete Time Fourier (DFT) transform signals having sparse spectrum. 
 
-The distribution contains C++ code for the FFAST engine and example runs.
+The distribution contains C++ source code for the FFAST engine, demo files and MATLAB scripts that interact with the tool.
 
 Idea behind FFAST
 ====
 
 The algorithm cleverly induces sparse graph alias codes in the DFT domain, by sub-sampling of the time-domain samples. The resulting sparse graph alias codes are then exploited in a peeling decoder. 
 
-Besides the exactly sparse spectrum, the algorithm can handle both the noisy setting and signals with approximately sparse spectra.
+Besides the noiseless and exactly sparse spectrum, the algorithm can handle the noisy setting. The algorithm is also observed to perform well in the case of off-grid spectra; however, theoretical guarantees are not given for that case.
 
 Example usage
 ====

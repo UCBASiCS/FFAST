@@ -120,7 +120,7 @@ void Config::setDefaultOptions()
 
     /* for experiment mode */
     iterations = 1;
-    experimentMode = false;
+    experimentMode = true;
     // Phase = 0 implies phase of non-zero 
     // coefficients is uniformly random in [0,2*pi]. 
     phasesNb = 0; 
