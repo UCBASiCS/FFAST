@@ -114,28 +114,33 @@ void ExperimentInput::generateNonZeroFrequencies()
         int tempLocation = ((int) floor(config->getSignalLengthOriginal()*distribution((ffast_real) drand48(), config->getDistribution())))
                 % config->getSignalLengthOriginal();
 	
-	
-	// for off-grid we need guard bands this is why this is here
-        if (tempLocations.count(tempLocation-5)+
-	    tempLocations.count(tempLocation-4)+
-	    tempLocations.count(tempLocation-3)+
-	    tempLocations.count(tempLocation-2)+
-	    tempLocations.count(tempLocation-1)+
-	    tempLocations.count(tempLocation+0)+
-	    tempLocations.count(tempLocation+1)+
-	    tempLocations.count(tempLocation+2)+
-	    tempLocations.count(tempLocation+3)+
-	    tempLocations.count(tempLocation+4)+
-	    tempLocations.count(tempLocation+5) == 0)
-        {
-            tempLocations.insert(tempLocation);
-        }
+	// for off-grid we need guard bands
+	if (config->getSignalLengthOriginal() != config->getSignalLength() ) 
+	{
+            if (tempLocations.count(tempLocation-5)+
+		tempLocations.count(tempLocation-4)+
+	        tempLocations.count(tempLocation-3)+
+		tempLocations.count(tempLocation-2)+
+		tempLocations.count(tempLocation-1)+
+		tempLocations.count(tempLocation+0)+
+		tempLocations.count(tempLocation+1)+
+		tempLocations.count(tempLocation+2)+
+		tempLocations.count(tempLocation+3)+
+		tempLocations.count(tempLocation+4)+
+		tempLocations.count(tempLocation+5) == 0)
+	    {
+		tempLocations.insert(tempLocation);
+	    }
+	}
+	else
+	{
+	    tempLocations.insert(tempLocation);
+	}
     }
 
     for(auto it = tempLocations.cbegin(); it != tempLocations.cend(); ++it)
     {
         nonZeroFrequencies[*it] = std::polar(signalMagnitude, getRandomPhase());
-	// nonZeroFrequencies[*it] = std::polar(signalMagnitude*(1+(pow(10,(config->getMaxSNRdB()-config->getSNRdB())/20)-1)*drand48()), getRandomPhase());
     }
 }
 
