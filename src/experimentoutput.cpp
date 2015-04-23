@@ -21,33 +21,36 @@ void ExperimentOutput::process()
 
     std::unordered_map<int,ffast_complex> decodedFrequencies;
 
-    // Adjust the output to the original signal
-    for (auto it = backEnd->getDecodedFrequencies().cbegin(); it != backEnd->getDecodedFrequencies().cend(); ++it)
+    // If the signal was off-grid 
+    // adjust the output to the original signal
+    if ( config->getSignalLengthOriginal() != config->getSignalLength() )
     {
-	if (input->getNonZeroFrequencies().count(it->first+1) > 0)
+        for (auto it = backEnd->getDecodedFrequencies().cbegin(); it != backEnd->getDecodedFrequencies().cend(); ++it)
 	{
-	    decodedFrequencies[it->first+1] = it->second;
-        }
-	else if (input->getNonZeroFrequencies().count(it->first-1) > 0)
-        {
-	    decodedFrequencies[it->first-1] = it->second;
-        }
-	else if (input->getNonZeroFrequencies().count(it->first+2) > 0)
-	{
-	    decodedFrequencies[it->first+2] = it->second;
-        }
-	else if (input->getNonZeroFrequencies().count(it->first-2) > 0)
-	{
-	    decodedFrequencies[it->first-2] = it->second;
-        }
-	else
-	{
-	    decodedFrequencies[it->first] = it->second;
-        }
+	    if (input->getNonZeroFrequencies().count(it->first+1) > 0)
+	    {
+		decodedFrequencies[it->first+1] = it->second;
+	    }
+	    else if (input->getNonZeroFrequencies().count(it->first-1) > 0)
+	    {
+		decodedFrequencies[it->first-1] = it->second;
+	    }
+	    else if (input->getNonZeroFrequencies().count(it->first+2) > 0)
+	    {
+		decodedFrequencies[it->first+2] = it->second;
+	    }
+	    else if (input->getNonZeroFrequencies().count(it->first-2) > 0)
+	    {
+		decodedFrequencies[it->first-2] = it->second;
+	    }
+	    else
+	    {
+		decodedFrequencies[it->first] = it->second;
+	    }
+	}
+	backEnd->swapDecodedFrequencies(decodedFrequencies);
+	decodedFrequencies.clear();
     }
-    
-    backEnd->swapDecodedFrequencies(decodedFrequencies);
-    decodedFrequencies.clear();
 
     checkFalseDetections();
     checkMissedLocationsOrBinningFailure();
