@@ -81,10 +81,23 @@ bool BinProcessor::isSingleton()
     // if the bin is a singleton, when we peel the frequency from the bin
     // the remaining power should be coming from noise only
     if (noise <= thresholds[stage] && std::norm(amplitude) > minimumEnergy)
-    {
+    {   
+        /* for checking the thresholds
+        std::cout << "---------" << std::endl;
+        std::cout << "remaining noise " << noise << " threshold: " << thresholds[stage] << std::endl;
+        std::cout << "signal energy " << std::norm(amplitude) << " minimum energy: " << minimumEnergy << std::endl;
+        */
         // The bin is a singleton
         return true;
     }
+    /* for checking the thresholds
+    else
+    {
+        std::cout << "---------" << std::endl;
+        std::cout << "remaining noise " << noise << " threshold: " << thresholds[stage] << std::endl;
+        std::cout << "signal energy " << std::norm(amplitude) << " minimum energy: " << minimumEnergy << std::endl;
+    }
+    */
 
     // The bin is a 'multi-ton'
     return false;
@@ -188,7 +201,7 @@ void BinProcessor::computeLocation()
         loc_update = tempLocation/nwrap - location_bis;
         r =  loc_update - round((loc_update * nwrap) / ((ffast_real) signalLength)) * (((ffast_real) signalLength)/nwrap);
         location_bis += r;
-        nwrap *= 2; // 2^i
+        nwrap *= 2; // equal to 2^i
     }
 
     location = positiveMod(
@@ -255,57 +268,96 @@ void BinProcessor::computeThresholds()
     double tempEnergy = 0;
     int    energyHistogramBinsCounted = 0;
 
-    for (int stage = 0; stage < config->getBinsNb(); ++stage)
+    if ( config->isNoisy() || config->applyWindow() )
     {
-        for (int i = 0; i < config->getBinSize(stage); ++i)
+        // go over the stages
+        for (int stage = 0; stage < config->getBinsNb(); ++stage)
         {
-            tempEnergy = 0;
-            for (int j = 0; j < config->getDelaysNb(); ++j)
+            // go over the bins in the stage
+            for (int i = 0; i < config->getBinSize(stage); ++i)
             {
-                tempEnergy+=std::norm(observationMatrix[config->getBinOffset(stage)+i][j]);
+                // this is the energy of a bin measurement
+                tempEnergy = 0;
+                // go over the delays (go over bin measurements)
+                for (int j = 0; j < config->getDelaysNb(); ++j)
+                {
+                    // std::norm calculates norm-squared
+                    tempEnergy += std::norm(observationMatrix[config->getBinOffset(stage)+i][j]);
+                }
+                energyBins.push_back(tempEnergy);
             }
-            energyBins.push_back(tempEnergy);
         }
-    }
 
-    // make histogram below
-    std::sort (energyBins.begin(), energyBins.end());
-    double oneOverEta = (double)config->getSignalSparsityPeeling()/((double)config->getBinsSum()/(double)config->getBinsNb());
-    double maxValueWanted = round(energyBins.size()/M_E);
+        // make histogram below
+        // sort the energy bins 
+        std::sort (energyBins.begin(), energyBins.end());
 
-    for (int i = 1; i <= 2; ++i)
-    {
-        maxValueWanted+=energyBins.size()*exp(-oneOverEta)*pow(oneOverEta,i)/tgamma(i+1);
-    }
+        double oneOverEta = (double)config->getSignalSparsityPeeling()/((double)config->getBinsSum()/(double)config->getBinsNb());
+        double maxValueWanted = round(energyBins.size()/M_E);
 
-    for (int i = 0; i < round(energyBins.size()*exp(-oneOverEta)); ++i)
-    {
-        noiseEstimation += energyBins[i];
-        energyHistogramBinsCounted++;
-    }
+        for (int i = 1; i <= 2; ++i)
+        {
+            maxValueWanted += energyBins.size()*exp(-oneOverEta)*pow(oneOverEta,i)/tgamma(i+1);
+        }
 
-    // CHOICE 1: this corresponds to the average energy of the zero-ton bins
-    // noiseEstimation /= energyHistogramBinsCounted;
+        /*
+        for (int i = 0; i < round(energyBins.size()*exp(-oneOverEta)); ++i)
+        {
+            std::cout << "energy bins" << i << ": " << energyBins[i] << std::endl;
+            noiseEstimation += energyBins[i];
+            energyHistogramBinsCounted++;
+        }
+        */
+
+        bool noiseLevelCrossed = false;
+        while (!noiseLevelCrossed)
+        {
+            // std::cout << "energy bins" << energyHistogramBinsCounted << ": " << energyBins[energyHistogramBinsCounted] << std::endl;
+            noiseEstimation += energyBins[energyHistogramBinsCounted];
+            energyHistogramBinsCounted++;
+            // if the bin energy is 10 times the previous one, declare it has signal in it
+            if ( energyBins[energyHistogramBinsCounted] / energyBins[energyHistogramBinsCounted-1] >= 10 )
+            {
+                noiseLevelCrossed = true;
+            }
+        }
+
+
+        // CHOICE 1: this corresponds to the average energy of the zero-ton bins
+        noiseEstimation /= energyHistogramBinsCounted;
     
-    // CHOICE 2: this corresponds to the maximum energy of the zero-ton bins 
-    noiseEstimation = energyBins[round(energyBins.size()/(M_E))];
+        // CHOICE 2: this corresponds to the maximum energy of the zero-ton bins 
+        // noiseEstimation = energyBins[ round( energyBins.size() / (M_E) ) ];
+    }
 
     // Minimum energy for the signal to be accepted as non-zero 
     // 10 percent of the minimum SNR
        
     if( !(config->isNoisy() || config->applyWindow()) ) // noiseless ongrid
     {
-	minimumEnergy = pow(10,-8);
+        minimumEnergy = pow(10,-8);
     }
     else if ( config->isNoisy() && !config->applyWindow() ) // noisy ongrid
     {
-	minimumEnergy = 0.1 * noiseEstimation * pow(10,config->getSNRdB()/10);
+        /*
+            We want a threshold on the minimum signal energy to eliminate false
+            detections. A simple one would be of the sort: 
+            minimumEnergy = 0.1 * noiseEstimation * pow(10,config->getSNRdB()/10);
+            However, for large signal to noise ratio, this is not working since there
+            is always a noise floor around 1e-18 due to numerical issues, hence when
+            multiplied with high SNR it blows up. Hence, for small SNR we do that, but
+            for large SNR we clip it. 
+            We chose it to clip to 1000 times the noise floor.
+        */
+        minimumEnergy = std::min( 0.1 * noiseEstimation * pow(10,config->getSNRdB()/10) , 1000 * noiseEstimation );
     }
     
-    if ( config->applyWindow() )
+    if ( config->applyWindow() ) // offgrid
     {
-	minimumEnergy = 0.1 * config->getMinFourierMagnitude();
+        minimumEnergy = 0.1 * config->getMinFourierMagnitude();
     }
+
+    // std::cout << "estimated noise: " << noiseEstimation << std::endl;
 
     // Base threshold for the remaining bin signal to be considered as zero-ton
     // after the signal is peeled from it

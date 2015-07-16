@@ -74,7 +74,7 @@ void FrontEnd::process()
                 {
                     usedSamples.insert(sampleIndex);
                 }
-		subSampledSignal[binRelativeIndex] = sqrt(samplingPeriods[stage])*input->getSignalAtIndex(sampleIndex)*window(sampleIndex);
+                subSampledSignal[binRelativeIndex] = sqrt(samplingPeriods[stage])*input->getSignalAtIndex(sampleIndex)*window(sampleIndex);
             }
 
             fftw_execute(plans[stage]);

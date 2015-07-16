@@ -41,9 +41,8 @@ void FFAST::displayResults() const
 
     if ( config->needToCountSamples() )
     {
-        std::cout << std::endl << "<===== NUMBER OF SAMPLES =====>" << std::endl
-                  << frontEnd->getUsedSamplesNb() << " -> used samples" << std::endl;
-	std::cout << std::setprecision(3) << frontEnd->getUsedSamplesNb()/((double) config->getSignalLengthOriginal())*100 << "\% samples touched" << std::endl;
+        std::cout << std::endl << "<===== NUMBER OF SAMPLES =====>" << std::endl << frontEnd->getUsedSamplesNb() << " -> used samples" << std::endl;
+        std::cout << std::setprecision(3) << frontEnd->getUsedSamplesNb()/((double) config->getSignalLengthOriginal())*100 << "\% samples touched" << std::endl;
     }
     
     std::cout << std::endl << "<===== AVERAGE TIME (in seconds) =====>" << std::endl;

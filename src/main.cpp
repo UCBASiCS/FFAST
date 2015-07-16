@@ -37,56 +37,62 @@ int main(int argc, char** argv)
     // in other applications changing these objects would be enough.
     if ( configurations->isExperimentMode() )
     {
-	input  = new ExperimentInput(mChrono, configurations);
-	// output = new CustomizedOutput(mChrono, configurations);
-	output = new ExperimentOutput(mChrono, configurations, dynamic_cast<ExperimentInput*>(input));
+	   input  = new ExperimentInput(mChrono, configurations);
+	   // output = new CustomizedOutput(mChrono, configurations);
+	   output = new ExperimentOutput(mChrono, configurations, dynamic_cast<ExperimentInput*>(input));
     }
     else
     {
-	input  = new CustomizedInput(mChrono, configurations);    
-	output = new CustomizedOutput(mChrono, configurations);
+	   input  = new CustomizedInput(mChrono, configurations);    
+	   output = new CustomizedOutput(mChrono, configurations);
     }
 
     FFAST* ffast = new FFAST(configurations, input, output);
     
     if (!configurations->isHelpDisplayed())
     {
+        // the number of iterations entered by the user
         int iterations = configurations->getIterations();
 
         configurations->display();
 
+        // do the required number of iterations
         for (int iteration=0; iteration<iterations; iteration++)
         {
-	    input->process(ffast->getDelays());
+            input->process( ffast->getDelays() );
             ffast->process();
-	    output->process();
+            output->process();
         }
         
         ffast->displayResults();
+
+        if ( configurations->isExperimentMode() )
+        {
+            std::cout << std::setprecision(3) << std::scientific << mChrono->average("Input") << " -> signal generation"  << std::endl;
+        }
     }
 
     	
     if (configurations->needToCompareWithFFTW())
     {
-	input->process();
-	const std::unordered_map<int,ffast_complex> mymap = input->getTimeSignal();
+        input->process();
+        const std::unordered_map<int,ffast_complex> mymap = input->getTimeSignal();
 
-	ffast_complex* inputSignal = (ffast_complex*) fftw_malloc(configurations->getSignalLength() * sizeof(ffast_complex));
+        ffast_complex* inputSignal = (ffast_complex*) fftw_malloc(configurations->getSignalLength() * sizeof(ffast_complex));
 	
-	for ( auto it = mymap.begin(); it!= mymap.end(); ++it )
-	{
-	    inputSignal[it->first] = it->second;
-	}
+        for ( auto it = mymap.begin(); it!= mymap.end(); ++it )
+        {
+            inputSignal[it->first] = it->second;
+        }
       
-	FFTW* fftw = new FFTW(mChrono, configurations, inputSignal);
-	fftw->process();
+        FFTW* fftw = new FFTW(mChrono, configurations, inputSignal);
+        fftw->process();
 	
-	std::cout << std::endl;
-	std::cout << "<===== FFTW =====>" << std::endl;
-	std::cout << std::setprecision(3) << std::scientific
-                  << mChrono->average("FFTW") << " -> execution of FFTW"  << std::endl;
+        std::cout << std::endl;
+        std::cout << "<===== FFTW =====>" << std::endl;
+        std::cout << std::setprecision(3) << std::scientific << mChrono->average("FFTW") << " -> execution of FFTW"  << std::endl;
 
-	delete fftw;
+        delete fftw;
     }
 
     std::cout << std::endl;

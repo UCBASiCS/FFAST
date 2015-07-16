@@ -8,7 +8,8 @@
 
 ExperimentInput::ExperimentInput(Chrono* newChrono, const Config* newConfig): Input(newChrono, newConfig)
 {
-    // set the signal amplitudes to 1 and change the noise variance
+    // set the signal amplitudes to 1 and change
+    // the noise variance to account for SNR
     signalMagnitude = 1;
     noiseStdDeviation = pow(10,-config->getSNRdB()/20);
 }
@@ -23,7 +24,7 @@ void ExperimentInput::process()
     
     for (int k = 0; k < config->getSignalLength(); k++)
     {
-	neededSamples.insert(k);
+	   neededSamples.insert(k);
     }
     
     generateNonZeroFrequencies();
@@ -49,7 +50,9 @@ void ExperimentInput::process(std::vector<int> delays)
     findNeededSamples(delays);
 
     generateNonZeroFrequencies();
+    
     frequencyToTime();
+    
 
     if (config->isNoisy())
     {
@@ -185,31 +188,48 @@ void ExperimentInput::addNoise()
 
 void ExperimentInput::frequencyToTime()
 {
+    ffast_real w_0 = 2*M_PI/config->getSignalLengthOriginal();
+    ffast_real w_0t;
+
     // go through the required sample indices
     for (auto t = neededSamples.cbegin(); t != neededSamples.cend(); ++t)
     {
         timeSignal[*t] = 0;
+        w_0t = w_0*(*t);
+
 	// go through the non-zero frequency components
         for (auto f = nonZeroFrequencies.cbegin(); f != nonZeroFrequencies.cend(); ++f)
         {
-            timeSignal[*t] += (f->second)*std::polar(1.0,(ffast_real) (2*M_PI*(f->first)*(*t)/config->getSignalLengthOriginal()));
+            timeSignal[*t] += (f->second)*std::polar( 1.0,(ffast_real) (w_0t*(f->first)) );
         }
     }
 }
 
 void ExperimentInput::findNeededSamples(std::vector<int> delays)
 {
-    for (int i = 0; i < config->getSignalSparsity()*100; ++i)
+    int stageJumpFactor;
+
+    // if the problem is off-grid    
+    if ( config->getSignalLengthOriginal() != config->getSignalLength() )
     {
-        neededSamples.insert(i);
+        for (int i = 0; i < config->getSignalSparsity()*100; ++i)
+        {
+            neededSamples.insert(i);
+        }
     }
+
+    // go over each stage
     for (int stage=0; stage<config->getBinsNb(); stage++)
     {
+        stageJumpFactor = config->getSignalLength()/config->getBinSize(stage);
+
+        // go over each delay
         for(auto delayIterator=delays.begin(); delayIterator != delays.end(); ++delayIterator)
         {
+            // delay within the bin
             for (int binRelativeIndex=0; binRelativeIndex<config->getBinSize(stage); binRelativeIndex++)
             {
-                neededSamples.insert(((int) (*delayIterator + binRelativeIndex*(config->getSignalLength()/config->getBinSize(stage)))) % config->getSignalLength());
+                neededSamples.insert((int) (*delayIterator + binRelativeIndex * stageJumpFactor) % config->getSignalLength());
 
             }
         }

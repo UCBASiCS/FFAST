@@ -31,6 +31,7 @@ private:
     std::vector<unsigned int> falseDetectionsNbs;
     std::vector<unsigned int> missedLocationsNbs;
     std::vector<double> MSEerrors;
+    std::unordered_map<int,int> trappingSetSizeCounter;
     int binningFailuresNb;
     std::vector<ffast_real> MSEerrorsAmplitude;
     int fullRecoveriesNb;
