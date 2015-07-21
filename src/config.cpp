@@ -387,76 +387,85 @@ void Config::help()
 {
     helpDisplayed = true;
 
-    std::cout << std::endl << "<===== HELP =====>"
-              << std::endl << std::endl
-	      << " [-a or --experiment]" << std::endl
-              << "     Run experiment mode."  
-              << std::endl << std::endl
-              << " [-b BINS or --bins BINS]" << std::endl
-              << "     Set the bins to use." << std::endl
-              << "     Example: -b \"125 128 243\"."
-              << std::endl << std::endl
-              << " [-c or --samples]" << std::endl
-              << "     Do not count the number of signal samples used in the front-end and display it in the results section."
-              << std::endl << std::endl
-              << " [-d NUM or --delays NUM]" << std::endl
-              << "     Set the number of delays to use in the back-end." << std::endl
-              << "     Note: the following assertions should be true (d >= 2) and (d < n/max(Bins))."
-	      << std::endl << std::endl
-	      << " [-f FNAME or --file FNAME]" << std::endl
-              << "     Input file to use" << std::endl
-              << "     Example: -f \"timeSignal.txt\"."
-	      << std::endl << std::endl
-	      << " [-g NUM or --minmagnitude NUM]" << std::endl
-              << "     Minimum Fourier magnitude that will be recovered. Strongly advised to be entered in offgrid setting."
-              << std::endl << std::endl
-              << " [-i NUM or --iterations NUM]" << std::endl
-              << "     Set the number of iterations." << std::endl
-              << "     When the algorithm is be executed several times, the results will be averaged."
-              << std::endl << std::endl
-              << " [-k NUM or --sparsity NUM]" << std::endl
-              << "     Set the signal sparsity. The input signal will have k uniformly distributed non zero frequency." << std::endl
-              << "     Note: the following assertions should be true (k <= n) and (k <= 2*min(Bins))."
-              << std::endl << std::endl
-              << " [-l or --ml]" << std::endl
-              << "     Enable the maximum likelihood detection." << std::endl
-              << "     Note: This may be required when the snr is really low but it will dramatically slow down the execution."
-              << std::endl << std::endl
-              << " [-m NUM or --factor NUM]" << std::endl
-              << "     Set the length factor. It is useful for having small bins and large signal length." << std::endl
-              << "     Note: The length of the signal is equal to lcm(Bins)*(length factor)."
-              << std::endl << std::endl
-              << " [-o or --optimize]" << std::endl
-              << "     Create optimized FFTW plans." << std::endl
-              << "     Note: This option should be used only with small n (less than 5000) since creating plans for big signals is slow."
-              << std::endl << std::endl
-              << " [-r or --reconstruct]" << std::endl
-              << "     Force the back-end to reconstruct the full n-length frequency signal." << std::endl
-              << "     Note: this can increase the execution time of the FFAST algorithm."
-              << std::endl << std::endl
-              << " [-s NUM or --snr NUM]" << std::endl
-              << "     Add noise to the input signal in frequency domain and specify the SNR in dB." << std::endl
-              << "     Example: -s 15 will generate a noisy signal with a SNR equal to 15 dB."
-              << std::endl << std::endl
-              << " [-v or --verbose]" << std::endl
-              << "     Enable the verbose mode: the details of each iteration will be displayed."
-              << std::endl << std::endl
-              << " [-u DIST or --distribution DIST]" << std::endl
-              << "     Enable the non-uniform distribution mode: input the weights of your distribution." << std::endl
-              << "     Example: -u \"3 2 1\" will divide your frequency domain in 3, the probability to be in the first third will be 1/2, the next 1/3 and the last 1/6"
-              << std::endl << std::endl
-              << " [-w or --fftw]" << std::endl
-              << "     Compare the execution time of FFAST with FFTW." << std::endl
-              << "     Note: FFTW will be exectuted at each iterarion and this will lead to slower execution." 
-              << std::endl << std::endl
-	      << " [-x BINF or --bins_with_factor BINF]" << std::endl
-              << "     Set the bins and the factor length at the same time." << std::endl
-              << "     The syntax is the same than for setting bin but the last value is used for the factor." << std::endl
-              << "     Example: -x \"49 50 51 10\" will set bins to \"49 50 51\" and length factor to 10."
-	      << std::endl << std::endl
-	      << " [-z FNAME or --write FNAME]" << std::endl
-              << "     Write the output on the choosen file"
-              << std::endl;
+    std::cout   << std::endl << "<===== HELP =====>"
+                << std::endl << std::endl
+                << " [-a or --experiment]" << std::endl
+                << "     Run experiment mode."  
+                << std::endl << std::endl
+                << " [-b BINS or --bins BINS]" << std::endl
+                << "     Set the bins to use." << std::endl
+                << "     Example: -b \"125 128 243\"."
+                << std::endl << std::endl
+                << " [-c or --samples]" << std::endl
+                << "     Do not count the number of signal samples used in the front-end and display it in the results section."
+                << std::endl << std::endl
+                << " [-d NUM or --delays NUM]" << std::endl
+                << "     Set the number of delays to use in the back-end." << std::endl
+                << "     Note: the following assertions should be true (d >= 2) and (d < n/max(Bins))."
+                << std::endl << std::endl
+                << " [-e NUM or --chains NUM]" << std::endl
+                << "     Set the number of chains to use in the back-end for fast search."
+                << std::endl << std::endl
+                << " [-f FNAME or --file FNAME]" << std::endl
+                << "     Input file to use" << std::endl
+                << "     Example: -f \"timeSignal.txt\"."
+                << std::endl << std::endl
+                << " [-g NUM or --minmagnitude NUM]" << std::endl
+                << "     Minimum Fourier magnitude that will be recovered. Strongly advised to be entered in offgrid setting."
+                << std::endl << std::endl
+                << " [-h or --help]" << std::endl
+                << "     Displays help."
+                << std::endl << std::endl
+                << " [-i NUM or --iterations NUM]" << std::endl
+                << "     Set the number of iterations." << std::endl
+                << "     When the algorithm is be executed several times, the results will be averaged."
+                << std::endl << std::endl
+                << " [-k NUM or --sparsity NUM]" << std::endl
+                << "     Set the signal sparsity. The input signal will have k uniformly distributed non zero frequency." << std::endl
+                << "     Note: the following assertions should be true (k <= n) and (k <= 2*min(Bins))."
+                << std::endl << std::endl
+                << " [-l or --ml]" << std::endl
+                << "     Enable the maximum likelihood detection." << std::endl
+                << "     Note: This may be required when the snr is really low but it will dramatically slow down the execution."
+                << std::endl << std::endl
+                << " [-m NUM or --factor NUM]" << std::endl
+                << "     Set the length factor. It is useful for having small bins and large signal length." << std::endl
+                << "     Note: The length of the signal is equal to lcm(Bins)*(length factor)."
+                << std::endl << std::endl
+                << " [-n NUM or --length NUM]" << std::endl
+                << "     Set the signal length."
+                << std::endl << std::endl
+                << " [-o or --optimize]" << std::endl
+                << "     Create optimized FFTW plans." << std::endl
+                << "     Note: This option should be used only with small n (less than 5000) since creating plans for big signals is slow."
+                << std::endl << std::endl
+                << " [-r or --reconstruct]" << std::endl
+                << "     Force the back-end to reconstruct the full n-length frequency signal." << std::endl
+                << "     Note: this can increase the execution time of the FFAST algorithm."
+                << std::endl << std::endl
+                << " [-s NUM or --snr NUM]" << std::endl
+                << "     Add noise to the input signal in frequency domain and specify the SNR in dB." << std::endl
+                << "     Example: -s 15 will generate a noisy signal with a SNR equal to 15 dB."
+                << std::endl << std::endl
+                << " [-v or --verbose]" << std::endl
+                << "     Enable the verbose mode: the details of each iteration will be displayed."
+                << std::endl << std::endl
+                << " [-u DIST or --distribution DIST]" << std::endl
+                << "     Enable the non-uniform distribution mode: input the weights of your distribution." << std::endl
+                << "     Example: -u \"3 2 1\" will divide your frequency domain in 3, the probability to be in the first third will be 1/2, the next 1/3 and the last 1/6"
+                << std::endl << std::endl
+                << " [-w or --fftw]" << std::endl
+                << "     Compare the execution time of FFAST with FFTW." << std::endl
+                << "     Note: FFTW will be exectuted at each iterarion and this will lead to slower execution." 
+                << std::endl << std::endl
+                << " [-x BINF or --bins_with_factor BINF]" << std::endl
+                << "     Set the bins and the factor length at the same time." << std::endl
+                << "     The syntax is the same than for setting bin but the last value is used for the factor." << std::endl
+                << "     Example: -x \"49 50 51 10\" will set bins to \"49 50 51\" and length factor to 10."
+                << std::endl << std::endl
+                << " [-z FNAME or --write FNAME]" << std::endl
+                << "     Write the output on the choosen file"
+                << std::endl;
 }
 
 bool Config::isHelpDisplayed() const

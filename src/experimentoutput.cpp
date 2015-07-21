@@ -102,7 +102,7 @@ void ExperimentOutput::displayGlobalResults()
     std::cout 	<< std::endl << "<===== FFAST RESULTS =====>" << std::endl;
     std::cout 	<< std::setprecision(4)  << averageMSEerrorAmplitude << " -> MSE error amplitude" << std::endl;
     // std::cout   << maxMSEerrorAmplitude << " -> maximum MSE amplitude"   << std::endl;
-    std::cout 	<< "average freq error is " << std::setprecision(2) << averageMSEerror*100 << " percent of 2PI/N = " << 2*M_PI/config->getSignalLengthOriginal() << std::endl;
+    std::cout 	<< "average freq error is " << averageMSEerror*100 << " percent of 2PI/N = " << 2*M_PI/config->getSignalLengthOriginal() << std::endl;
     // std::cout   << maxMSEerror          << " -> max MSE error frequencies"    << std::endl;
     std::cout   << averageFalseDetectionsNb << " -> average false detections" << std::endl;
     std::cout   << maxFalseDetectionsNb     << " -> maximum false detections" << std::endl;
@@ -259,50 +259,49 @@ bool ExperimentOutput::isBinningFailure(std::set<int> missedLocations) const
         it could have been peeled, declare NOT a bining failure. If all of the missed
         locations appear in multiton bins, than it is a binning failure.
     */
-        for (int stage=0; stage<config->getBinsNb(); stage++)
+    for (int stage=0; stage<config->getBinsNb(); stage++)
+    {
+        std::vector<int> binStatus(config->getBinSize(stage), 0);
+
+        for (auto it = missedLocations.cbegin(); it != missedLocations.cend(); ++it)
         {
-            std::vector<int> binStatus(config->getBinSize(stage), 0);
-
-            for (auto it = missedLocations.cbegin(); it != missedLocations.cend(); ++it)
-            {
-                binStatus[*it % config->getBinSize(stage)]++;
-            }
-
-            for (unsigned int index=0; index<binStatus.size(); index++)
-            {
-                if (binStatus[index] == 1)
-                {
-                    return false;
-                }
-            }
+            binStatus[*it % config->getBinSize(stage)]++;
         }
 
-        return true;
+        for (unsigned int index=0; index<binStatus.size(); index++)
+        {
+            if (binStatus[index] == 1)
+            {
+                return false;
+            }
+        }
     }
+    return true;
+}
 
-    void ExperimentOutput::setGlobalResultsFigures()
-    {
-        averageMSEerrorAmplitude    = 0;
-        maxMSEerrorAmplitude        = 0;
-        averageMissedLocationsNb    = 0;
-        maxMissedLocationsNb        = 0;
-        averageFalseDetectionsNb    = 0;
-        maxFalseDetectionsNb        = 0;
-        averageMSEerror             = 0;
-        maxMSEerror                 = 0;
-        int falseDetectionsNb       = 0;
-        int missedLocationsNb       = 0;
+void ExperimentOutput::setGlobalResultsFigures()
+{
+    averageMSEerrorAmplitude    = 0;
+    maxMSEerrorAmplitude        = 0;
+    averageMissedLocationsNb    = 0;
+    maxMissedLocationsNb        = 0;
+    averageFalseDetectionsNb    = 0;
+    maxFalseDetectionsNb        = 0;
+    averageMSEerror             = 0;
+    maxMSEerror                 = 0;
+    int falseDetectionsNb       = 0;
+    int missedLocationsNb       = 0;
 
-        setAverageAndMax(MSEerrorsAmplitude, averageMSEerrorAmplitude, maxMSEerrorAmplitude);
-        setAverageAndMax(missedLocationsNbs, averageMissedLocationsNb, maxMissedLocationsNb, &missedLocationsNb);
-        setAverageAndMax(falseDetectionsNbs, averageFalseDetectionsNb, maxFalseDetectionsNb, &falseDetectionsNb);
-        setAverageAndMax(MSEerrors, averageMSEerror, maxMSEerror);
+    setAverageAndMax(MSEerrorsAmplitude, averageMSEerrorAmplitude, maxMSEerrorAmplitude);
+    setAverageAndMax(missedLocationsNbs, averageMissedLocationsNb, maxMissedLocationsNb, &missedLocationsNb);
+    setAverageAndMax(falseDetectionsNbs, averageFalseDetectionsNb, maxFalseDetectionsNb, &falseDetectionsNb);
+    setAverageAndMax(MSEerrors, averageMSEerror, maxMSEerror);
 
-        probabilityOfFalseDetection = ((ffast_real) falseDetectionsNb)/ config->getIterations();
-        probabilityOfMissedLocation = ((ffast_real) missedLocationsNb)/ config->getIterations();
-        probabilityOfBinningFailure = ((ffast_real) binningFailuresNb)/ config->getIterations();
-        probabilityOfFullRecovery = ((ffast_real) fullRecoveriesNb)/ config->getIterations();
-    }
+    probabilityOfFalseDetection = ((ffast_real) falseDetectionsNb)/ config->getIterations();
+    probabilityOfMissedLocation = ((ffast_real) missedLocationsNb)/ config->getIterations();
+    probabilityOfBinningFailure = ((ffast_real) binningFailuresNb)/ config->getIterations();
+    probabilityOfFullRecovery = ((ffast_real) fullRecoveriesNb)/ config->getIterations();
+}
 
 template <class tempVector>
     void ExperimentOutput::setAverageAndMax(tempVector& array, ffast_real& average, ffast_real& max, int* counter)

@@ -48,6 +48,7 @@ private:
     void computeFrequencySignal();
     void addNoise();
     void frequencyToTime();
+    void frequencyToTimeUsingFFT(std::vector<int> delays);
 };
 
 #endif // EXPERIMENTINPUT_H

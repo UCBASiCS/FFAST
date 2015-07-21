@@ -58,10 +58,12 @@ void FrontEnd::process()
     int sampleIndex;
     int binAbsoluteIndex;
     signal = input->getTimeSignal();
+    ffast_real sqrtStageSamplingPeriod;
 
     for (int stage = 0; stage < config->getBinsNb(); stage++)
     {
         int delayIndex = 0;
+        sqrtStageSamplingPeriod = sqrt(samplingPeriods[stage]);
 
         for(auto delayIterator=delays.begin(); delayIterator != delays.end(); ++delayIterator)
         {
@@ -74,7 +76,8 @@ void FrontEnd::process()
                 {
                     usedSamples.insert(sampleIndex);
                 }
-                subSampledSignal[binRelativeIndex] = sqrt(samplingPeriods[stage])*input->getSignalAtIndex(sampleIndex)*window(sampleIndex);
+                // subSampledSignal[binRelativeIndex] = sqrt(samplingPeriods[stage])*input->getSignalAtIndex(sampleIndex)*window(sampleIndex);
+                subSampledSignal[binRelativeIndex] = sqrtStageSamplingPeriod*input->getSignalAtIndex(sampleIndex)*window(sampleIndex);
             }
 
             fftw_execute(plans[stage]);

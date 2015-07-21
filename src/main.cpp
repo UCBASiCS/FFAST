@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 
         if ( configurations->isExperimentMode() )
         {
-            std::cout << std::setprecision(3) << std::scientific << mChrono->average("Input") << " -> signal generation"  << std::endl;
+            std::cout << std::setprecision(3) << std::scientific << mChrono->average("Input") << " -> signal generation time"  << std::endl;
         }
     }
 

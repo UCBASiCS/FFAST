@@ -51,7 +51,15 @@ void ExperimentInput::process(std::vector<int> delays)
 
     generateNonZeroFrequencies();
     
-    frequencyToTime();
+    // if the problem is not off-grid, generate the signal using FFT
+    if ( config->getSignalLengthOriginal() != config->getSignalLength() )
+    {
+        frequencyToTime();
+    }
+    else
+    {
+        frequencyToTimeUsingFFT(delays);
+    }
     
 
     if (config->isNoisy())
@@ -205,6 +213,55 @@ void ExperimentInput::frequencyToTime()
     }
 }
 
+void ExperimentInput::frequencyToTimeUsingFFT(std::vector<int> delays)
+{
+    ffast_real w_0 = 2*M_PI/config->getSignalLengthOriginal();
+    ffast_real w_0d;
+
+    fftw_plan* plans = (fftw_plan*) malloc(config->getBinsNb() * sizeof(fftw_plan));
+    ffast_complex* aliasedSpectrum  = (ffast_complex*) fftw_malloc( config->getBiggestBin() * sizeof(ffast_complex) );
+    ffast_complex* subSampledSignal = (ffast_complex*) fftw_malloc( config->getBiggestBin() * sizeof(ffast_complex) );
+
+    int stageJumpFactor;
+
+    // go over each stage
+    for (int stage=0; stage<config->getBinsNb(); stage++)
+    {
+        // std::cout << "stage " << stage << " --------" << std::endl;
+        // std::cout << "binsize " << config->getBinSize(stage) << " --------" << std::endl;
+        stageJumpFactor = config->getSignalLength() / config->getBinSize(stage);
+
+        plans[stage] = fftw_plan_dft_1d(config->getBinSize(stage), reinterpret_cast<fftw_complex*>(aliasedSpectrum), reinterpret_cast<fftw_complex*>(subSampledSignal), FFTW_BACKWARD, config->getFFTWstrategy());
+
+        // go over each delay
+        for(auto delayIterator=delays.begin(); delayIterator != delays.end(); ++delayIterator)
+        {
+            for (int i = 0; i < config->getBiggestBin(); i++)
+            {
+                aliasedSpectrum[ i ] = 0;
+            }
+            
+            // std::cout << "delay " << *delayIterator << std::endl;
+            w_0d = w_0*(*delayIterator);
+
+            // go through the nonzero frequencies
+            for (auto f = nonZeroFrequencies.cbegin(); f != nonZeroFrequencies.cend(); ++f)
+            {
+                aliasedSpectrum[ (f->first)%config->getBinSize(stage) ] += (f->second)*std::polar( 1.0,(ffast_real) (w_0d *f->first ) );
+            }
+            fftw_execute( plans[stage] );
+
+            for (int i = 0; i < config->getBinSize(stage); i++)
+            {
+                timeSignal[ (stageJumpFactor*i+(*delayIterator))%config->getSignalLength() ] = subSampledSignal[i];
+                // std::cout << "---- sample: " << i << std::endl;
+                // std::cout << "time signal:" << timeSignal[ (stageJumpFactor*i+(*delayIterator))%config->getSignalLength() ] << std::endl;
+                // std::cout << "new one: " << subSampledSignal[i] << std::endl;
+            }
+        }
+    }
+}
+
 void ExperimentInput::findNeededSamples(std::vector<int> delays)
 {
     int stageJumpFactor;
@@ -212,6 +269,7 @@ void ExperimentInput::findNeededSamples(std::vector<int> delays)
     // if the problem is off-grid    
     if ( config->getSignalLengthOriginal() != config->getSignalLength() )
     {
+        // std::cout << "off-grid needed samples" << std::endl;
         for (int i = 0; i < config->getSignalSparsity()*100; ++i)
         {
             neededSamples.insert(i);

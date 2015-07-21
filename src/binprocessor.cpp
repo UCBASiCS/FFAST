@@ -359,9 +359,15 @@ void BinProcessor::computeThresholds()
 
     // std::cout << "estimated noise: " << noiseEstimation << std::endl;
 
-    // Base threshold for the remaining bin signal to be considered as zero-ton
-    // after the signal is peeled from it
-    ffast_real baseThreshold = pow(10, -8); // Used for noiseless simulations.
+    /*
+        Base threshold for the remaining bin signal to be considered as 
+        zero-ton after the signal is peeled from it. This value, in theory, is zero
+        for noiseless simulations. However, due to machine precision, it needs to be positive
+        value. For noiseless simulations we chose it to be 1e-13. If this value is high,
+        we start to get false detections. One can decrease the thrsholds or increase the
+        number of delays to reduce the false detections.
+    */
+    ffast_real baseThreshold = pow(10, -13);
     
     ffast_real factor;
 
