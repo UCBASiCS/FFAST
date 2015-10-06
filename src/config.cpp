@@ -505,7 +505,7 @@ void Config::setOptionsFromCommandLine()
 
     while(option != -1)
     {
-        option = getopt_long(argc, argv, "acf:d:e:hg:i:k:b:lm:n:op:rs:tu:vwx:", longOptions, NULL); //abfgjuxyz
+        option = getopt_long(argc, argv, "acf:d:e:hg:i:k:b:lm:n:op:rs:tu:vwx:z:", longOptions, NULL); //abfgjuxyz
 
         switch (option)
         {
@@ -538,6 +538,7 @@ void Config::setOptionsFromCommandLine()
 
 	case 'f':
             inputFile = optarg;
+            experimentMode = false;
             break;
 
         case 'h':
