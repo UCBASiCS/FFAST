@@ -30,8 +30,6 @@ void CustomizedOutput::process()
         myfile.close();
     }
 
-    std::cout << "CUSTOMIZED OUTPUT LINE 33" << std::endl;
-    
     chrono->stop("Output");
 }
 
