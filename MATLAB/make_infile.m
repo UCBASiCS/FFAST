@@ -50,7 +50,7 @@ end
 disp('writing time domain signal to file...');
 fid = fopen(infile, 'w');
 for i = 1:n
-    fprintf(fid, '(%f,%f)\n', real(signal(i)), imag(signal(i)));
+    fprintf(fid, '(%.8f,%.8f)\n', real(signal(i)), imag(signal(i)));
 end
 fclose(fid);
 
