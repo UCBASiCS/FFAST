@@ -50,6 +50,7 @@ void BinProcessor::process()
 {
     if (MLdetection)
     {
+        // MLprocess tries out all possible locations and estimates bin signal
         MLprocess();
     }
     else
@@ -80,8 +81,9 @@ bool BinProcessor::isSingleton()
     
     // if the bin is a singleton, when we peel the frequency from the bin
     // the remaining power should be coming from noise only
+    // also we need the singleton to have energy larger than a threshold (minimumEnergy)
     if (noise <= thresholds[stage] && std::norm(amplitude) > minimumEnergy)
-    {   
+    {
         /* for checking the thresholds
         std::cout << "---------" << std::endl;
         std::cout << "remaining noise " << noise << " threshold: " << thresholds[stage] << std::endl;
@@ -140,6 +142,11 @@ void BinProcessor::MLprocess()
     ffast_real MLnoise = std::numeric_limits<ffast_real>::infinity();
     int MLlocation = 0;
 
+    /*
+        The balls (spectrum of the original signal) that can be in this bin are
+        at indices binRelativeIndex + n*numberOfBinsAtStage.
+        Here, we find the best possible ball that matches the signal at this bin.
+    */
     location = binRelativeIndex;
 
     while (location < signalLength)
@@ -152,6 +159,7 @@ void BinProcessor::MLprocess()
             MLlocation = location;
         }
 
+        // binSize is equal to the number of bins at the stage
         location += binSize;
     }
 
@@ -166,19 +174,24 @@ void BinProcessor::estimateBinSignal()
 
     for(auto delayIterator=delays.begin(); delayIterator != delays.end(); ++delayIterator)
     {
+        // phase picked up by a tone at 'location' due to the delay
         directionVector[delayIndex] = std::polar((ffast_real) 1, (ffast_real) twoPiBySignalLength*location*(*delayIterator));
+        // remove the picked up phase
         amplitude += std::conj(directionVector[delayIndex]) * observationMatrix[binAbsoluteIndex][delayIndex];
 
         delayIndex++;
     }
 
+    // average the found amplitudes
     amplitude /= delaysNb;
 
     noise = 0;
 
     for (int delayIndex=0; delayIndex<delaysNb; delayIndex++)
     {
+        // compute the bin signal that would result from a tone with such amplitude and location
         signalVector[delayIndex] = amplitude*directionVector[delayIndex];
+        // the residual between the actual bin measurement and the computed one is the noise
         noise += std::norm(observationMatrix[binAbsoluteIndex][delayIndex]-signalVector[delayIndex]);
     }
 }
@@ -190,13 +203,13 @@ void BinProcessor::computeLocation()
     ffast_real tempLocation;
     ffast_real loc_update;
     ffast_real r;
-    
-    for (int i = 0; i < chainsNb; ++i) 
+
+    for (int i = 0; i < chainsNb; ++i)
     {
         // Kay's method
         tempLocation = fmod(signalLengthByTwoPi*getOmega(i), signalLength);
         tempLocation = tempLocation > 0 ? tempLocation : tempLocation+signalLength;
-    
+
 	// Update Location
         loc_update = tempLocation/nwrap - location_bis;
         r =  loc_update - round((loc_update * nwrap) / ((ffast_real) signalLength)) * (((ffast_real) signalLength)/nwrap);
@@ -210,6 +223,7 @@ void BinProcessor::computeLocation()
             );
 }
 
+// i corresponds to the delay-bunch index
 ffast_real BinProcessor::getOmega(int i) const
 {
     ffast_real omega = 0;
@@ -341,12 +355,12 @@ void BinProcessor::computeThresholds()
     {
         /*
             We want a threshold on the minimum signal energy to eliminate false
-            detections. A simple one would be of the sort: 
+            detections. A simple one would be of the sort:
             minimumEnergy = 0.1 * noiseEstimation * pow(10,config->getSNRdB()/10);
             However, for large signal to noise ratio, this is not working since there
             is always a noise floor around 1e-18 due to numerical issues, hence when
             multiplied with high SNR it blows up. Hence, for small SNR we do that, but
-            for large SNR we clip it. 
+            for large SNR we clip it.
             We chose it to clip to 1000 times the noise floor.
         */
         minimumEnergy = std::min( 0.1 * noiseEstimation * pow(10,config->getSNRdB()/10) , 1000 * noiseEstimation );

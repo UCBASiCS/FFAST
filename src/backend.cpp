@@ -29,7 +29,7 @@ void BackEnd::process()
     initialize();
 
     while(singletonFound)
-    {       
+    {
         singletonFound = false;
 
         for (int stage = 0; stage < config->getBinsNb(); stage++)
@@ -41,8 +41,9 @@ void BackEnd::process()
                 // Copies the values of bin index and related variables in binProcessor object.
                 binProcessor->adjustTo(binAbsoluteIndex, binRelativeIndex, stage);
 
-                if (   
-			changed[binAbsoluteIndex]
+                // only check for singletons in the updated bins
+                if (
+                        changed[binAbsoluteIndex]
                         && binProcessor->isSingleton()
                         && decodedFrequencies.count(binProcessor->getLocation()) == 0
                    )
@@ -52,6 +53,8 @@ void BackEnd::process()
                     peelFrom(binProcessor->getLocation());
                 }
 
+                // mark this bin as processed
+                // remark: this state can be changed if a ball is peeled from this bin
                 changed[binAbsoluteIndex] = false;
 
                 if ((int) decodedFrequencies.size() == config->getSignalSparsityPeeling())
@@ -103,6 +106,8 @@ void BackEnd::initialize()
     decodedFrequencies.clear();
     realFrequenciesIndices.clear();
 
+    // peeling engine checks for singletons only in the updated (changed) bins
+    // initialize all to true so that all the bins are check on the first run through
     for (int binAbsoluteIndex = 0; binAbsoluteIndex < config->getBinsSum(); binAbsoluteIndex++)
     {
         changed[binAbsoluteIndex] = true;
@@ -112,8 +117,10 @@ void BackEnd::initialize()
 void BackEnd::peelFrom(int location)
 {
     int hash;
+    // peel the contribution of the ball from all stages
     for (int stage = 0; stage < config->getBinsNb(); stage++)
     {
+        // index of the bin the ball is connected to at this stage
         hash = ( location % config->getBinSize(stage) ) + config->getBinOffset(stage);
         for (int delayIndex = 0; delayIndex < config->getDelaysNb(); delayIndex++)
         {

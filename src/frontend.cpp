@@ -67,8 +67,10 @@ void FrontEnd::process()
 
         for(auto delayIterator=delays.begin(); delayIterator != delays.end(); ++delayIterator)
         {
+            // subsample the signal
             for (int binRelativeIndex=0; binRelativeIndex<config->getBinSize(stage); binRelativeIndex++)
             {
+                // samples at the subsampled signal
                 sampleIndex = ((int) (*delayIterator + binRelativeIndex*samplingPeriods[stage])) % signalLength;
 
                 // Just counting the number of samples once if the -c flag is given
@@ -84,6 +86,7 @@ void FrontEnd::process()
 
             binAbsoluteIndex = config->getBinOffset(stage);
 
+            // occupy the observation matrix
             for (int binRelativeIndex=0; binRelativeIndex<config->getBinSize(stage); binRelativeIndex++)
             {
                 observationMatrix[binAbsoluteIndex][delayIndex] = DFTresults[binRelativeIndex]/sqrt(config->getBinSize(stage));
