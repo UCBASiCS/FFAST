@@ -303,7 +303,7 @@ void BinProcessor::computeThresholds()
         }
 
         // make histogram below
-        // sort the energy bins 
+        // sort the energy bins
         std::sort (energyBins.begin(), energyBins.end());
 
         double oneOverEta = (double)config->getSignalSparsityPeeling()/((double)config->getBinsSum()/(double)config->getBinsNb());
@@ -339,14 +339,14 @@ void BinProcessor::computeThresholds()
 
         // CHOICE 1: this corresponds to the average energy of the zero-ton bins
         noiseEstimation /= energyHistogramBinsCounted;
-    
-        // CHOICE 2: this corresponds to the maximum energy of the zero-ton bins 
+
+        // CHOICE 2: this corresponds to the maximum energy of the zero-ton bins
         // noiseEstimation = energyBins[ round( energyBins.size() / (M_E) ) ];
     }
 
-    // Minimum energy for the signal to be accepted as non-zero 
+    // Minimum energy for the signal to be accepted as non-zero
     // 10 percent of the minimum SNR
-       
+
     if( !(config->isNoisy() || config->applyWindow()) ) // noiseless ongrid
     {
         minimumEnergy = pow(10,-8);
@@ -365,7 +365,7 @@ void BinProcessor::computeThresholds()
         */
         minimumEnergy = std::min( 0.1 * noiseEstimation * pow(10,config->getSNRdB()/10) , 1000 * noiseEstimation );
     }
-    
+
     if ( config->applyWindow() ) // offgrid
     {
         minimumEnergy = 0.1 * config->getMinFourierMagnitude();
@@ -374,7 +374,7 @@ void BinProcessor::computeThresholds()
     // std::cout << "estimated noise: " << noiseEstimation << std::endl;
 
     /*
-        Base threshold for the remaining bin signal to be considered as 
+        Base threshold for the remaining bin signal to be considered as
         zero-ton after the signal is peeled from it. This value, in theory, is zero
         for noiseless simulations. However, due to machine precision, it needs to be positive
         value. For noiseless simulations we chose it to be 1e-13. If this value is high,
@@ -382,7 +382,7 @@ void BinProcessor::computeThresholds()
         number of delays to reduce the false detections.
     */
     ffast_real baseThreshold = pow(10, -13);
-    
+
     ffast_real factor;
 
     // Thresholds are obtained using tailbounds of Gaussian random variable
@@ -406,11 +406,11 @@ void BinProcessor::computeThresholds()
     for (int stage=0; stage<config->getBinsNb(); stage++)
     {
         thresholds[stage] = baseThreshold;
-		
+
         if ( config->applyWindow() || config->isNoisy() )
         {
             thresholds[stage] = pow(10,-10) + (ffast_real) factor * noiseEstimation;
-        } 
+        }
     }
 
 }

@@ -97,7 +97,7 @@ void FrontEnd::process()
             delayIndex++;
         }
     }
-    
+
     countSamplesDone = true;
 
     chrono->stop("FrontEnd");
@@ -138,7 +138,7 @@ void FrontEnd::computeDelays()
         else {
             // We use FFAST_Search
 	    int r = 0;
-	    
+
 	    unsigned long long int skip = 1;
             for (int i = 0; i < config->getChainsNb(); ++i)
             {
@@ -161,19 +161,19 @@ void FrontEnd::computeDelays()
 }
 
 ffast_real FrontEnd::window(int i) {
-    if(config->applyWindow()) 
+    if(config->applyWindow())
     {
         // Blackman-Nuttall window
         double a0 = 0.3635819;
         double a1 = 0.4891775;
         double a2 = 0.1365995;
         double a3 = 0.0106411;
-        return (ffast_real) 2 * ( a0 
+        return (ffast_real) 2 * ( a0
 			          - a1 * cos((2*M_PI*i) / (signalLength-1))
 		                  + a2 * cos((4*M_PI*i) / (signalLength-1))
 			          - a3 * cos((6*M_PI*i) / (signalLength-1)) );
     }
-    else 
+    else
     {
         return 1;
     }

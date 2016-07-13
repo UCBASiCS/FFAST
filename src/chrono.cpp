@@ -23,7 +23,7 @@ double Chrono::iteration(const std::string& section)
 }
 
 double Chrono::average(const std::string& section)
-{    
+{
     if (notEmpty(section))
     {
         double sum = 0;
@@ -31,7 +31,7 @@ double Chrono::average(const std::string& section)
 
         for (unsigned int i=0; i<timesNb; i++)
         {
-	    
+
 	    sum += getSectionTime(section, i);
         }
 
