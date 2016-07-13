@@ -40,5 +40,5 @@ References
 Authors
 ====
 
-Quentin Byron, Thibault Derousseaux, Rohan Varma, Xioa (Simon) Li, Orhan Ocal
+Quentin Byron, Thibault Derousseaux, Rohan Varma, Xiao (Simon) Li, Orhan Ocal
 
