@@ -78,7 +78,7 @@ bool BinProcessor::isSingleton()
     }
 
     process();
-    
+
     // if the bin is a singleton, when we peel the frequency from the bin
     // the remaining power should be coming from noise only
     // also we need the singleton to have energy larger than a threshold (minimumEnergy)
@@ -282,8 +282,9 @@ void BinProcessor::computeThresholds()
     double tempEnergy = 0;
     int    energyHistogramBinsCounted = 0;
 
-    if ( config->isNoisy() || config->applyWindow() )
+    if ( config->isNoisy() || config->isQuantized() || config->applyWindow()  )
     {
+        // store a vector of the energies of all bins
         // go over the stages
         for (int stage = 0; stage < config->getBinsNb(); ++stage)
         {
@@ -302,8 +303,7 @@ void BinProcessor::computeThresholds()
             }
         }
 
-        // make histogram below
-        // sort the energy bins
+        // make histogram below by sorting the energy bins
         std::sort (energyBins.begin(), energyBins.end());
 
         double oneOverEta = (double)config->getSignalSparsityPeeling()/((double)config->getBinsSum()/(double)config->getBinsNb());
@@ -336,7 +336,6 @@ void BinProcessor::computeThresholds()
             }
         }
 
-
         // CHOICE 1: this corresponds to the average energy of the zero-ton bins
         noiseEstimation /= energyHistogramBinsCounted;
 
@@ -347,11 +346,11 @@ void BinProcessor::computeThresholds()
     // Minimum energy for the signal to be accepted as non-zero
     // 10 percent of the minimum SNR
 
-    if( !(config->isNoisy() || config->applyWindow()) ) // noiseless ongrid
+    if( !(config->isNoisy() || config->isQuantized() || config->applyWindow()) ) // noiseless ongrid
     {
         minimumEnergy = pow(10,-8);
     }
-    else if ( config->isNoisy() && !config->applyWindow() ) // noisy ongrid
+    else if ( (config->isNoisy() || config->isQuantized()) && !config->applyWindow() ) // noisy ongrid
     {
         /*
             We want a threshold on the minimum signal energy to eliminate false
@@ -407,7 +406,7 @@ void BinProcessor::computeThresholds()
     {
         thresholds[stage] = baseThreshold;
 
-        if ( config->applyWindow() || config->isNoisy() )
+        if ( config->applyWindow() || config->isNoisy() || config->isQuantized() )
         {
             thresholds[stage] = pow(10,-10) + (ffast_real) factor * noiseEstimation;
         }

@@ -14,7 +14,7 @@ class ExperimentInput: public Input
 private:
     std::unordered_map<int,ffast_complex> timeSignal;
     std::set<int> neededSamples;
-    
+
     // for the experiment mode
     ffast_complex* frequencySignal;
     std::unordered_map<int,ffast_complex> nonZeroFrequencies;
@@ -29,7 +29,7 @@ public:
     void process();
     void process(std::vector<int> delays);
     const std::unordered_map<int,ffast_complex>& getTimeSignal() const;
-    
+
     // for the experiment mode
     ffast_complex* getFrequencySignal() const;
     const std::unordered_map<int,ffast_complex>& getNonZeroFrequencies() const;
@@ -40,15 +40,16 @@ public:
 
 private:
     void findNeededSamples(std::vector<int> delays);
-    
+
     // for the experiment mode
     ffast_real distribution(ffast_real _urand, std::vector<double> F);
-    void generateNonZeroFrequencies();        
+    void generateNonZeroFrequencies();
     ffast_real getRandomPhase() const;
     void computeFrequencySignal();
     void addNoise();
     void frequencyToTime();
     void frequencyToTimeUsingFFT(std::vector<int> delays);
+    void applyQuantization(int bitsNb);
 };
 
 #endif // EXPERIMENTINPUT_H

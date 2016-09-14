@@ -18,39 +18,48 @@ ExperimentInput::~ExperimentInput()
 {
 }
 
+// This function generates the whole signal, it is not limited to the needed samples
 void ExperimentInput::process()
 {
     chrono->start("Input");
-    
+
     for (int k = 0; k < config->getSignalLength(); k++)
     {
 	   neededSamples.insert(k);
     }
-    
+
     generateNonZeroFrequencies();
+
     frequencyToTime();
-    
+
     if (config->isNoisy())
     {
         addNoise();
     }
-    
+
+    // scale the Fourier transform
     for (auto t = neededSamples.cbegin(); t != neededSamples.cend(); ++t)
     {
         timeSignal[*t] /= sqrt((ffast_complex)config->getSignalLengthOriginal());
     }
-    
+
+    if (config->isQuantized())
+    {
+        applyQuantization(config->getQuantizationBitsNb());
+    }
+
     chrono->stop("Input");
 }
 
+// This function generates only the needed samples
 void ExperimentInput::process(std::vector<int> delays)
 {
     chrono->start("Input");
-    
+
     findNeededSamples(delays);
 
     generateNonZeroFrequencies();
-    
+
     // if the problem is not off-grid, generate the signal using FFT
     if ( config->getSignalLengthOriginal() != config->getSignalLength() )
     {
@@ -60,17 +69,22 @@ void ExperimentInput::process(std::vector<int> delays)
     {
         frequencyToTimeUsingFFT(delays);
     }
-    
 
     if (config->isNoisy())
     {
         addNoise();
     }
+
     for (auto t = neededSamples.cbegin(); t != neededSamples.cend(); ++t)
     {
         timeSignal[*t] /= sqrt((ffast_complex)config->getSignalLengthOriginal());
     }
-    
+
+    if (config->isQuantized())
+    {
+        applyQuantization(config->getQuantizationBitsNb());
+    }
+
     chrono->stop("Input");
 }
 
@@ -115,6 +129,78 @@ ffast_real ExperimentInput::distribution(ffast_real _urand, std::vector<double> 
     return 1;
 }
 
+void ExperimentInput::applyQuantization(int bitsNb)
+{
+    bool notInitialized = true;
+
+    ffast_real min_real, max_real;
+    ffast_real min_imag, max_imag;
+
+    ffast_real min_val, max_val;
+
+    ffast_real tr, ti;
+
+    int levelsNb = (1 << bitsNb);
+
+    for (auto t = neededSamples.cbegin(); t != neededSamples.cend(); ++t)
+    {
+        if(notInitialized)
+        {
+            min_real = std::real(timeSignal[*t]);
+            max_real = std::real(timeSignal[*t]);
+            min_imag = std::imag(timeSignal[*t]);
+            max_imag = std::imag(timeSignal[*t]);
+        }
+        else
+        {
+            tr = std::real(timeSignal[*t]);
+            ti = std::imag(timeSignal[*t]);
+
+            if( min_real > tr )
+            {
+                min_real = tr;
+            }
+            if( max_real < tr )
+            {
+                max_real = tr;
+            }
+
+            if( min_imag > ti )
+            {
+                min_imag = ti;
+            }
+            if( max_imag < ti )
+            {
+                max_imag = ti;
+            }
+        }
+    }
+
+    min_val = min_real < min_imag ? min_real : min_imag;
+    max_val = max_real > min_imag ? max_real : max_imag;
+
+    ffast_real t_real, t_imag;
+
+    ffast_real range = max_val - min_val;
+
+    ffast_real scaling = (levelsNb-1.0) / range;
+
+    for (auto t = neededSamples.cbegin(); t != neededSamples.cend(); ++t)
+    {
+        // std::cout << "time signal before " << timeSignal[*t] << std::endl;
+        t_real = std::real(timeSignal[*t]);
+        t_imag = std::imag(timeSignal[*t]);
+
+        t_real = round(scaling*(t_real - min_val))/scaling + min_val;
+        t_imag = round(scaling*(t_imag - min_val))/scaling + min_val;
+
+        timeSignal[*t].real(t_real);
+        timeSignal[*t].imag(t_imag);
+
+        // std::cout << "time signal after " << timeSignal[*t] << std::endl;
+    }
+}
+
 void ExperimentInput::generateNonZeroFrequencies()
 {
     std::set<int> tempLocations;
@@ -124,13 +210,13 @@ void ExperimentInput::generateNonZeroFrequencies()
     {
         int tempLocation = ((int) floor(config->getSignalLengthOriginal()*distribution((ffast_real) drand48(), config->getDistribution())))
                 % config->getSignalLengthOriginal();
-	
+
 	// for off-grid we need guard bands
 	if (config->getSignalLengthOriginal() != config->getSignalLength() ) 
 	{
-            if (tempLocations.count(tempLocation-5)+
-		tempLocations.count(tempLocation-4)+
-	        tempLocations.count(tempLocation-3)+
+        if (tempLocations.count(tempLocation-5)+
+        tempLocations.count(tempLocation-4)+
+        tempLocations.count(tempLocation-3)+
 		tempLocations.count(tempLocation-2)+
 		tempLocations.count(tempLocation-1)+
 		tempLocations.count(tempLocation+0)+
@@ -240,7 +326,7 @@ void ExperimentInput::frequencyToTimeUsingFFT(std::vector<int> delays)
             {
                 aliasedSpectrum[ i ] = 0;
             }
-            
+
             // std::cout << "delay " << *delayIterator << std::endl;
             w_0d = w_0*(*delayIterator);
 
@@ -266,7 +352,7 @@ void ExperimentInput::findNeededSamples(std::vector<int> delays)
 {
     int stageJumpFactor;
 
-    // if the problem is off-grid    
+    // if the problem is off-grid get extra samples at the beginning of the signal
     if ( config->getSignalLengthOriginal() != config->getSignalLength() )
     {
         // std::cout << "off-grid needed samples" << std::endl;

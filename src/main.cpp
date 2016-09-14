@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 {
     // Sets a random seed for each run of FFAST.
     srand48((long int) time (NULL));
-    
+
     // Configurations are set through the command line arguments
     Config* configurations = new Config(argc, argv);
     // This is here measuring how long it takes to generate the input and output
@@ -28,11 +28,11 @@ int main(int argc, char** argv)
     Input* input;
     // Output object
     Output* output;
-     
+
     // In the experiment mode, program uses randomly generated input and
     // compare the FFAST output to the input.
     // In the customized mode, program takes input from a file and outputs
-    // the recovered signal to a file. 
+    // the recovered signal to a file.
     // Note that input and output to FFAST is made modular and for using FFAST
     // in other applications changing these objects would be enough.
     if ( configurations->isExperimentMode() )
@@ -43,12 +43,12 @@ int main(int argc, char** argv)
     }
     else
     {
-	   input  = new CustomizedInput(mChrono, configurations);    
+	   input  = new CustomizedInput(mChrono, configurations);
 	   output = new CustomizedOutput(mChrono, configurations);
     }
 
     FFAST* ffast = new FFAST(configurations, input, output);
-    
+
     if (!configurations->isHelpDisplayed())
     {
         // the number of iterations entered by the user
@@ -63,7 +63,7 @@ int main(int argc, char** argv)
             ffast->process();
             output->process();
         }
-        
+
         ffast->displayResults();
 
         if ( configurations->isExperimentMode() )
@@ -72,22 +72,21 @@ int main(int argc, char** argv)
         }
     }
 
-    	
     if (configurations->needToCompareWithFFTW())
     {
         input->process();
         const std::unordered_map<int,ffast_complex> mymap = input->getTimeSignal();
 
         ffast_complex* inputSignal = (ffast_complex*) fftw_malloc(configurations->getSignalLength() * sizeof(ffast_complex));
-	
+
         for ( auto it = mymap.begin(); it!= mymap.end(); ++it )
         {
             inputSignal[it->first] = it->second;
         }
-      
+
         FFTW* fftw = new FFTW(mChrono, configurations, inputSignal);
         fftw->process();
-	
+
         std::cout << std::endl;
         std::cout << "<===== FFTW =====>" << std::endl;
         std::cout << std::setprecision(3) << std::scientific << mChrono->average("FFTW") << " -> execution of FFTW"  << std::endl;
@@ -96,7 +95,7 @@ int main(int argc, char** argv)
     }
 
     std::cout << std::endl;
-	
+
     delete ffast;
 
     exit(EXIT_SUCCESS);

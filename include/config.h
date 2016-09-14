@@ -25,6 +25,8 @@ private:
     int chainsNb;           // in draft paper : C=noisy ? log(log(n)) : 1
     int delaysPerBunchNb;   // in draft paper : D=input[def:2]
     bool noisy;
+    bool quantize;
+    int quantizationBitsNb;
     float SNRdB;
     float minFourierMagnitude;
     float offgridSNRdB;
@@ -61,13 +63,15 @@ public:
     int getChainsNb() const;
     int getDelaysPerBunchNb() const;
     bool isNoisy() const;
+    bool isQuantized() const;
+    int getQuantizationBitsNb() const;
     float getOffgridSNRdB() const;
     float getMinFourierMagnitude() const;
     float getSNRdB() const;
     float getMaxSNRdB() const;
     int getPhasesNb() const;
     int getMaxErrorsBeforeQuitting() const;
-    bool isVerbose() const; 
+    bool isVerbose() const;
     bool needToCompareWithFFTW() const;
     bool needToDisplayIterationTime() const;
     bool needToReconstructSignalInBackEnd() const;

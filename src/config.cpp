@@ -13,8 +13,6 @@
 #include <stdio.h>
 #include <limits>
 
-
-
 Config::Config(int newArgc, char** newArgv):argc(newArgc), argv(newArgv), helpDisplayed(false)
 {
     setDefaultOptions();
@@ -32,10 +30,10 @@ Config::Config(int newArgc, char** newArgv):argc(newArgc), argv(newArgv), helpDi
     maxSNRdB = (maxSNRdB < SNRdB) ? SNRdB : maxSNRdB;
 
     setBinOffsetsAndBinsSum();
-    
+
     if(distribution.size() == 0)
     {
-	preprocessDistribution((char*) "1");
+        preprocessDistribution((char*) "1");
     }
 
     // if the delays are not given as input by the user
@@ -46,24 +44,24 @@ Config::Config(int newArgc, char** newArgv):argc(newArgc), argv(newArgv), helpDi
 
 	if ( applyWindowVar )
 	{
-	    double mainLobePower = 2 * (  pow(sin(M_PI/2)/sin(M_PI/2/signalLength),2) 
-		                        + pow(sin(3*M_PI/2)/sin(3*M_PI/2/signalLength),2) 
+	    double mainLobePower = 2 * (  pow(sin(M_PI/2)/sin(M_PI/2/signalLength),2)
+		                        + pow(sin(3*M_PI/2)/sin(3*M_PI/2/signalLength),2)
 				        + pow(sin(5*M_PI/2)/sin(5*M_PI/2/signalLength),2)  );
 	    double signalToNoiseContributionFromOffgrid = mainLobePower / ( pow(signalLength,2) - mainLobePower );
-	    
+
 	    offgridSNRdB = 10 * log10(signalToNoiseContributionFromOffgrid);
 
 	    effectiveSNR = 1/( 1/effectiveSNR + 1/signalToNoiseContributionFromOffgrid );
 
 	}
-	
-	
+
+
 	// double delayScaling = 3 * pow(10,getSNRdB()/10)/(1 + 4*pow(10,getSNRdB()/20));
-	
+
 	double delayScaling = 3 * effectiveSNR / ( 1 + 4 * sqrt(effectiveSNR) );
 
 	chainsNb = ceil( log(signalLength) / sqrt(delayScaling) );
-	
+
 	if (!maximumLikelihood) // Fast search
 	{
 	    delaysPerBunchNb = 2 * ceil( pow(log(signalLength),1.0/3.0) / sqrt(delayScaling) );
@@ -82,7 +80,7 @@ Config::Config(int newArgc, char** newArgv):argc(newArgc), argv(newArgv), helpDi
     }
 
     delaysNb = chainsNb * delaysPerBunchNb;
-    
+
     if (!noisy && !applyWindowVar)
     {
 	chainsNb = 1;
@@ -105,7 +103,7 @@ Config::Config(int newArgc, char** newArgv):argc(newArgc), argv(newArgv), helpDi
 void Config::setDefaultOptions()
 {
     outputFile = (char*) "ffastOutput.txt";
-    
+
     signalLength = 124950;
     signalLengthOriginal = signalLength;
     signalSparsityPeeling = 40;
@@ -123,12 +121,14 @@ void Config::setDefaultOptions()
     experimentMode = true;
     // Phase = 0 implies phase of non-zero 
     // coefficients is uniformly random in [0,2*pi]. 
-    phasesNb = 0; 
+    phasesNb = 0;
     FFTWstrategy = FFTW_ESTIMATE;
     compareWithFFTW = false;
     displayIterationTime = false;
     noisy = false;
+    quantize = false;
     SNRdB = 50;
+    quantizationBitsNb = 0;
     maxSNRdB = -std::numeric_limits<float>::infinity();
     verbose = false;
     reconstructSignalInBackEnd = false;
@@ -216,6 +216,16 @@ int Config::getDelaysPerBunchNb() const
     return delaysPerBunchNb;
 }
 
+bool Config::isQuantized() const
+{
+    return quantize;
+}
+
+int Config::getQuantizationBitsNb () const
+{
+    return quantizationBitsNb;
+}
+
 bool Config::isNoisy() const
 {
     return noisy;
@@ -240,7 +250,6 @@ int Config::getPhasesNb() const
 {
     return phasesNb;
 }
-
 
 bool Config::isVerbose() const
 {
@@ -275,11 +284,10 @@ int Config::getFFTWstrategy() const
 void Config::display() const
 {
     std::cout << std::endl << "<=======================>" << std::endl;
-    
+
     if( isExperimentMode() )
     {
-	
-	std::cout << "Running experiment mode" << std::endl;
+	   std::cout << "Running experiment mode" << std::endl;
     }
 
     std::cout << std::endl << "<===== INPUT PROFILE =====>" << std::endl;
@@ -476,15 +484,15 @@ bool Config::isHelpDisplayed() const
 void Config::setOptionsFromCommandLine()
 {
     const struct option longOptions[] =
-    {	
-	{"experiment",	 no_argument,	    NULL, 'a'},
-	{"bins",	 required_argument, NULL, 'b'},
+    {
+        {"experiment",	 no_argument,	    NULL, 'a'},
+        {"bins",         required_argument, NULL, 'b'},
         {"samples",      no_argument,       NULL, 'c'},
         {"delays",       required_argument, NULL, 'd'},
         {"chains",       required_argument, NULL, 'e'},
-	{"file",         required_argument, NULL, 'f'},
-	{"minmagnitude", required_argument, NULL, 'g'},
-	{"write",        required_argument, NULL, 'w'},
+        {"file",         required_argument, NULL, 'f'},
+        {"minmagnitude", required_argument, NULL, 'g'},
+        {"write",        required_argument, NULL, 'w'},
         {"help",         no_argument,       NULL, 'h'},
         {"iterations",   required_argument, NULL, 'i'},
         {"sparsity",     required_argument, NULL, 'k'},
@@ -492,6 +500,7 @@ void Config::setOptionsFromCommandLine()
         {"factor",       required_argument, NULL, 'm'},
         {"length",       required_argument, NULL, 'n'},
         {"optimize",     no_argument,       NULL, 'o'},
+        {"quantization", required_argument, NULL, 'q'},
         {"reconstruct",  no_argument,       NULL, 'r'},
         {"snr",          required_argument, NULL, 's'},
         {"distribution", required_argument, NULL, 'u'},
@@ -505,99 +514,104 @@ void Config::setOptionsFromCommandLine()
 
     while(option != -1)
     {
-        option = getopt_long(argc, argv, "acf:d:e:hg:i:k:b:lm:n:op:rs:tu:vwx:z:", longOptions, NULL); //abfgjuxyz
+        option = getopt_long(argc, argv, "acf:d:e:hg:i:k:b:lm:n:op:q:rs:tu:vwx:z:", longOptions, NULL); //abfgjuxyz
 
         switch (option)
         {
-	case 'a':
-	    experimentMode = true;
-	    break;
-	    
-	case 'b':
-            setBins(optarg);
-            break;
+            case 'a':
+                experimentMode = true;
+                break;
 
-        case 'n':
-            signalLength = atoi(optarg);
-            signalLengthOriginal = atoi(optarg);
-            break;
+            case 'b':
+                setBins(optarg);
+                break;
 
-        case 'c':
-            countSamples = false;
-            break;
+            case 'n':
+                signalLength = atoi(optarg);
+                signalLengthOriginal = atoi(optarg);
+                break;
 
-        case 'd':
-            delaysPerBunchNb = atoi(optarg);
-            defaultDelays = false;
-            break;
+            case 'c':
+                countSamples = false;
+                break;
 
-        case 'e':
-            chainsNb = atoi(optarg);
-            defaultDelays = false;
-            break;
+            case 'd':
+                delaysPerBunchNb = atoi(optarg);
+                defaultDelays = false;
+                break;
 
-	case 'f':
-            inputFile = optarg;
-            experimentMode = false;
-            break;
+            case 'e':
+                chainsNb = atoi(optarg);
+                defaultDelays = false;
+                break;
 
-        case 'h':
-            help();
-            break;
+            case 'f':
+                inputFile = optarg;
+                experimentMode = false;
+                break;
 
-	case 'g':
-	    minFourierMagnitude = strtof(optarg,0);
-	    break;
+            case 'h':
+                help();
+                break;
 
-        case 'i':
-            iterations = atoi(optarg);
-            break;
+            case 'g':
+                minFourierMagnitude = strtof(optarg,0);
+                break;
 
-        case 'k':
-            signalSparsity = atoi(optarg);
-            signalSparsityPeeling = atoi(optarg);
-            break;
+            case 'i':
+                iterations = atoi(optarg);
+                break;
 
-        case 'l':
-            maximumLikelihood = true;
-            break;
+            case 'k':
+                signalSparsity = atoi(optarg);
+                signalSparsityPeeling = atoi(optarg);
+                break;
 
-        case 'm':
-            lengthFactor = atoi(optarg);
-            break;
+            case 'l':
+                maximumLikelihood = true;
+                break;
 
-        case 'o':
-            FFTWstrategy = FFTW_MEASURE;
-            break;
+            case 'm':
+                lengthFactor = atoi(optarg);
+                break;
 
-        case 'r':
-            reconstructSignalInBackEnd = true;
-            break;
+            case 'o':
+                FFTWstrategy = FFTW_MEASURE;
+                break;
 
-        case 's':
-            noisy = true;
-            SNRdB = strtof(optarg, 0);
-            break;
+            case 'q':
+                quantize = true;
+                quantizationBitsNb = atoi(optarg);
+                break;
 
-        case 'x':
-            maxSNRdB = strtof(optarg, 0);
-            break;
+            case 'r':
+                reconstructSignalInBackEnd = true;
+                break;
 
-        case 'u':
-            preprocessDistribution(optarg);
-            break;
+            case 's':
+                noisy = true;
+                SNRdB = strtof(optarg, 0);
+                break;
 
-	case 'z':
-            outputFile = optarg;
-            break;
+            case 'x':
+                maxSNRdB = strtof(optarg, 0);
+                break;
 
-        case 'v':
-            verbose = true;
-            break;
+            case 'u':
+                preprocessDistribution(optarg);
+                break;
 
-        case 'w':
-            compareWithFFTW = true;
-            break;
+            case 'z':
+                outputFile = optarg;
+                break;
+
+            case 'v':
+                verbose = true;
+                break;
+
+            case 'w':
+                compareWithFFTW = true;
+                break;
         }
     }
 }
